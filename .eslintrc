@@ -1,0 +1,32 @@
+extends: 'eslint:recommended'
+ecmaFeatures:
+  modules: true
+rules:
+  indent:
+    - 2
+    - 2
+  quotes: 0
+  linebreak-style:
+    - 2
+    - unix
+  semi:
+    - 0
+#    - always
+  strict: 0
+  dot-notation: 0
+  no-underscore-dangle: 0
+  eol-last: 0
+  curly: 0
+  camelcase: 0
+env:
+  browser: true
+  es6: true
+  node: true
+
+globals:
+
+  # Testing global variables
+  mocha: true
+  describe: true
+  it: true
+  assert: true
