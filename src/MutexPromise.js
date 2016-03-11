@@ -26,14 +26,7 @@ const UNCAUGHT_TIMEOUT = 25
 
 
 // 'tick' will be a function that takes a callback, and runs it asynchronously.
-// This is adapted from @mbest's knockout tasks.
-const tick = global.MutationObserver ?
-  function tickFn(callback) {
-    var div = document.createElement("div")
-    new MutationObserver(callback).observe(div, { attributes: true })
-    return function () { div.classList.toggle("foo") }
-  }
-  : typeof process === 'object' && process.nextTick ? process.nextTick
+const tick = typeof process === 'object' && process.nextTick ? process.nextTick
   : setImmediate ? setImmediate.bind(global)
   : function tickFn(callback) { setTimeout(callback, 0) }
 
