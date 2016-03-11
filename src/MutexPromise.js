@@ -94,7 +94,7 @@ class MutexPromise {
     // browsers)
     this.creationStack = new Error().stack
 
-    this.mutex = MutexPromise.mutex
+    this.mutexTo = MutexPromise.mutexId
 
     this.emit('new')
     fn(this._resolverFn.bind(this), this._rejectFn.bind(this))
@@ -110,6 +110,14 @@ class MutexPromise {
       promise2 = this._thenPending(onFul, onRej)
     } else {
       promise2 = this._thenImmediate(onFul, onRej)
+    }
+
+    // Note who we'd catch for (i.e. "parents")
+    promise2.weCatchFor(this)
+
+    // We're catching, meaning we catch anything above us.
+    if (typeof onRej === 'function') {
+      this._setCaught()
     }
 
     // 2.2.7 then must return a promise
@@ -195,6 +203,14 @@ class MutexPromise {
     )
   }
 
+  // Catching
+  _setCaught() {
+    if (this.state !== PENDING) { return }
+    this._isCaught = true
+    this.weCatchFor.forEach((p) => p._setCaught())
+  }
+
+
   // resolve/reject functions
   //
   _resolveThenable(thenable, then) {
@@ -243,9 +259,11 @@ class MutexPromise {
           && valueOrReasonOrThenable !== null
           && valueOrReasonOrThenable.then
     } catch(e) {
+      this.resolutionStack = new Error().stack
       this.state = REJECTED
       this.resolution = e
       this._notifyPromisees()
+      this.emit('reject', valueOrReasonOrThenable)
       return
     }
 
@@ -255,17 +273,26 @@ class MutexPromise {
 
       // 2.2.7.2: If either onFulfilled or onRejected throws an exception e,
       //    promise2 must be rejected with e as the reason.
-      //    (hence immediateStaet !== REJECTED)
+      //    (hence immediateState !== REJECTED)
       this._resolveThenable(valueOrReasonOrThenable, then)
     } else {
+      this.resolutionStack = new Error().stack
       this.state = immediateState
       this.resolution = valueOrReasonOrThenable
       this._notifyPromisees()
+      this.emit(
+        immediateState === RESOLVED ? 'resolve' : 'reject',
+        valueOrReasonOrThenable)
     }
   }
 
   _concludeFn(valueOrReasonOrThenable, immediateState) {
-    if (this.mutex !== MutexPromise.mutex) { this.emit("trespass") }
+    if (this.mutexTo !== MutexPromise.mutexId) {
+      this.emit("trespass", {
+        promiseMutexTo: this.mutexTo,
+        mutexId: MutexPromise.mutexId
+      })
+    }
     if (this.state !== PENDING) { return }
     if (valueOrReasonOrThenable === this) {
       throw new TypeError("Cannot resolve promise with itself.")
@@ -294,18 +321,30 @@ class MutexPromise {
 //
 // Global methods on MutexPromise
 //
-// MutexPromise.race = function race(iter) {
-// //   for (var item of iter) {
-// //
-// //   }
-// }
+MutexPromise.race = function race(iter) {
+  return new Promise(function (res, rej) {
+    iter.forEach((p) => p.then(res, rej))
+  })
+}
+
 //
 //
-// MutexPromise.all = function all(iter) {
-//   // for (var item of iter) {
-//   //
-//   // }
-// }
+MutexPromise.all = function all(iter) {
+  var arr = []
+  var seen = 0
+
+  return new Promise(function (res, rej) {
+    iter.forEach(function (p) {
+      var idx = arr.length
+      arr.push(undefined)
+      p.then(function (value) {
+        arr[idx] = value
+        if (seen++ === arr.length) { res(arr) }
+      })
+      p.catch(rej)
+    })
+  })
+}
 
 MutexPromise.resolve = (value) => new MutexPromise((res) => res(value))
 MutexPromise.reject = (reason) => new MutexPromise((_, rej) => rej(reason))
@@ -327,9 +366,9 @@ MutexPromise.off = function off(eventName, handler) {
 }
 
 // -- Exclusion groups --
-MutexPromise.startMutex = function(identifier) {
+MutexPromise.setMutex = function(identifier) {
   // Promises will now reject when
-  MutexPromise.mutex = identifier
+  MutexPromise.mutexId = identifier
 }
 
 
