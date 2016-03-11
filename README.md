@@ -22,8 +22,6 @@ written in ES6 Javascript meaning,
 -  this would need to be transpiled for backwards compatibility; and, in any case
 -  this implementation is not fast compared to others.
 
-There are many other promise implementations better suited for production.
-
 
 ## Events
 
@@ -106,7 +104,7 @@ Note:
 
 - [The TC39 Spec on Promises](https://tc39.github.io/ecma262/#sec-promise-executor)
 - [promises-aplus issue #167](https://github.com/promises-aplus/promises-spec/issues/167).
-- [ECMA262 issue #76][https://github.com/tc39/ecma262/pull/76]
+- [ECMA262 issue #76](https://github.com/tc39/ecma262/pull/76)
 
 
 # Creation and Chaining Call Stack
