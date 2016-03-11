@@ -21,11 +21,11 @@
 
 /* eslint no-console: 0 */
 
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
 
 var PENDING = 0,
     RESOLVED = 1,
@@ -41,7 +41,7 @@ var tick = (typeof process === 'undefined' ? 'undefined' : _typeof(process)) ===
 // A Promisee is the recipient of a promise, via the 'then' method.
 //
 
-var Promisee = (function () {
+var Promisee = function () {
   function Promisee(thenPromise, onResolvePromise1, onRejectPromise1) {
     _classCallCheck(this, Promisee);
 
@@ -83,9 +83,9 @@ var Promisee = (function () {
   }]);
 
   return Promisee;
-})();
+}();
 
-var MutexPromise = (function () {
+var MutexPromise = function () {
   function MutexPromise(fn) {
     _classCallCheck(this, MutexPromise);
 
@@ -111,6 +111,7 @@ var MutexPromise = (function () {
   }
 
   // 2.2 The `then` Method
+
 
   _createClass(MutexPromise, [{
     key: 'then',
@@ -379,20 +380,21 @@ var MutexPromise = (function () {
       this._concludeFn(reasonOrThenable, REJECTED);
 
       // Capture Uncaught rejections and emit them.
-      setTimeout((function () {
+      setTimeout(function () {
         if (!this._isCaught) {
           this.emit('uncaught', this, reasonOrThenable);
         }
-      }).bind(this), UNCAUGHT_TIMEOUT);
+      }.bind(this), UNCAUGHT_TIMEOUT);
     }
   }]);
 
   return MutexPromise;
-})();
+}();
 
 //
 // Global methods on MutexPromise
 //
+
 
 MutexPromise.race = function race(iter) {
   return new MutexPromise(function (res, rej) {

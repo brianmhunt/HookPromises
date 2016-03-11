@@ -8,6 +8,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "babel-cli": "^6.6.5",
     "babel-preset-es2015": "^6.6.0",
     "chai": "^3.5.0",
     "eslint": "^2.3.0",
@@ -16,9 +17,9 @@
     "sinon": "^1.17.3"
   },
   "scripts": {
-    "build": "babel src/MutexPromise.js  > dist/MutexPromise.js",
+    "build": "./node_modules/babel-cli/bin/babel.js src/MutexPromise.js  > dist/MutexPromise.js",
     "lint": "node ./node_modules/eslint/bin/eslint.js test src",
-    "prepublish": "babel src/MutexPromise.js  > dist/MutexPromise.js",
+    "prepublish": "./node_modules/babel-cli/bin/babel.js src/MutexPromise.js  > dist/MutexPromise.js",
     "test": "./node_modules/mocha/bin/mocha -u bdd",
     "start": "node ./node_modules/chokidar-cli --initial 'src/*.js' 'test/*.js' -c 'mocha -c -b -u bdd'"
   },
