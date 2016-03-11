@@ -27,7 +27,7 @@ const UNCAUGHT_TIMEOUT = 25
 
 // 'tick' will be a function that takes a callback, and runs it asynchronously.
 const tick = typeof process === 'object' && process.nextTick ? process.nextTick
-  : setImmediate ? setImmediate.bind(global)
+  : global.setImmediate ? global.setImmediate.bind(global)
   : function tickFn(callback) { setTimeout(callback, 0) }
 
 
@@ -75,7 +75,7 @@ class MutexPromise {
     this.state = PENDING
 
     // The value this ultimately lands on.
-    this.resolution
+    this.resolution = undefined
 
     // Promises "above" us; if we catch, so do they.
     this.weCatchFor = []
@@ -138,7 +138,7 @@ class MutexPromise {
 
   // Event methods
   emit(eventName, data) {
-    var handlers = (MutexPromise.eventHandlers[eventName] || [])
+    var handlers = MutexPromise.eventHandlers[eventName] || []
     // FIXME: `tick` each function call
     handlers.forEach((fn) => fn.call(this, data))
   }
@@ -351,6 +351,7 @@ MutexPromise.all = function all(iter) {
           if (++seen === arr.length) { res(arr) }
         }, rej)
     })
+    if (arr.length === 0) { res([]) }
   })
 
   promises.forEach(function (p) {

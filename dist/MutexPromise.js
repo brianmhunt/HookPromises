@@ -33,7 +33,7 @@ var PENDING = 0,
 var UNCAUGHT_TIMEOUT = 25;
 
 // 'tick' will be a function that takes a callback, and runs it asynchronously.
-var tick = (typeof process === 'undefined' ? 'undefined' : _typeof(process)) === 'object' && process.nextTick ? process.nextTick : setImmediate ? setImmediate.bind(global) : function tickFn(callback) {
+var tick = (typeof process === 'undefined' ? 'undefined' : _typeof(process)) === 'object' && process.nextTick ? process.nextTick : global.setImmediate ? global.setImmediate.bind(global) : function tickFn(callback) {
   setTimeout(callback, 0);
 };
 
@@ -92,7 +92,7 @@ var MutexPromise = (function () {
     this.state = PENDING;
 
     // The value this ultimately lands on.
-    this.resolution;
+    this.resolution = undefined;
 
     // Promises "above" us; if we catch, so do they.
     this.weCatchFor = [];
@@ -416,6 +416,9 @@ MutexPromise.all = function all(iter) {
         }
       }, rej);
     });
+    if (arr.length === 0) {
+      res([]);
+    }
   });
 
   promises.forEach(function (p) {

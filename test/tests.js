@@ -238,6 +238,10 @@ describe("MutexPromise", function () {
       })
     })
 
+    it("finishes when given an empty array", function () {
+      return MP.all([])
+    })
+
     it.skip("Marks its argument-promises as caught", function () {
       var p0 = MP.resolve('ab')
       return MP.all([p0])
