@@ -23,6 +23,13 @@ written in ES6 Javascript meaning,
 -  this implementation is not fast compared to others.
 
 
+# Install
+
+```bash
+$ npm install brianmhunt-mutex-promise
+```
+
+
 ## Events
 
 The following events are available:
@@ -109,8 +116,8 @@ Note:
 
 # Creation and Chaining Call Stack
 
-Each promise instance has a `creationStack`, and once resolved or rejected
-a `resolutionStack`.
+Each promise instance has a `creationStack` property, and once resolved or
+rejected a `resolutionStack` property.
 
 
 ## License & Thanks
