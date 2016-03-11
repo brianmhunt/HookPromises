@@ -1,6 +1,6 @@
 {
   "name": "brianmhunt-mutex-promise",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Promises with uncaught handling and events",
   "main": "index.js",
   "directories": {
@@ -16,6 +16,7 @@
     "sinon": "^1.17.3"
   },
   "scripts": {
+    "build": "babel src/MutexPromise.js  > dist/MutexPromise.js",
     "test": "./node_modules/mocha/bin/mocha -u bdd",
     "watch": "node ./node_modules/chokidar-cli --initial 'src/*.js' 'test/*.js' -c 'mocha -c -b -u bdd'",
     "lint": "node ./node_modules/eslint/bin/eslint.js test src"
