@@ -1,6 +1,6 @@
 
 <div style='float: right'>
-  <a href='https://travis-ci.org/brianmhunt/MutexPromise.svg?branch=master'>
+  <a href='https://travis-ci.org/brianmhunt/MutexPromise'>
     <img src='https://travis-ci.org/brianmhunt/MutexPromise.svg?branch=master' alt='Travis Status' title='Travis Status' align="right">
   </a>
 
