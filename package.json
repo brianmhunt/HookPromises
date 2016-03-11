@@ -17,9 +17,10 @@
   },
   "scripts": {
     "build": "babel src/MutexPromise.js  > dist/MutexPromise.js",
-    "test": "./node_modules/mocha/bin/mocha -u bdd",
-    "watch": "node ./node_modules/chokidar-cli --initial 'src/*.js' 'test/*.js' -c 'mocha -c -b -u bdd'",
-    "lint": "node ./node_modules/eslint/bin/eslint.js test src"
+    "lint": "node ./node_modules/eslint/bin/eslint.js test src",
+    "prepublish": "babel src/MutexPromise.js  > dist/MutexPromise.js",
+    "start": "./node_modules/mocha/bin/mocha -u bdd",
+    "watch": "node ./node_modules/chokidar-cli --initial 'src/*.js' 'test/*.js' -c 'mocha -c -b -u bdd'"
   },
   "repository": {
     "type": "git",

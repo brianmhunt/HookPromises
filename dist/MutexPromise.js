@@ -33,14 +33,7 @@ var PENDING = 0,
 var UNCAUGHT_TIMEOUT = 25;
 
 // 'tick' will be a function that takes a callback, and runs it asynchronously.
-// This is adapted from @mbest's knockout tasks.
-var tick = global.MutationObserver ? function tickFn(callback) {
-  var div = document.createElement("div");
-  new MutationObserver(callback).observe(div, { attributes: true });
-  return function () {
-    div.classList.toggle("foo");
-  };
-} : (typeof process === "undefined" ? "undefined" : _typeof(process)) === 'object' && process.nextTick ? process.nextTick : setImmediate ? setImmediate.bind(global) : function tickFn(callback) {
+var tick = (typeof process === 'undefined' ? 'undefined' : _typeof(process)) === 'object' && process.nextTick ? process.nextTick : setImmediate ? setImmediate.bind(global) : function tickFn(callback) {
   setTimeout(callback, 0);
 };
 
@@ -59,7 +52,7 @@ var Promisee = (function () {
   }
 
   _createClass(Promisee, [{
-    key: "conclude",
+    key: 'conclude',
     value: function conclude(method, valueOrReason) {
       var onFn, noFn;
       if (this.concluded) {
@@ -120,7 +113,7 @@ var MutexPromise = (function () {
   // 2.2 The `then` Method
 
   _createClass(MutexPromise, [{
-    key: "then",
+    key: 'then',
     value: function then(onFul, onRej) {
       var promise2;
       // 2.2.2.1/.3.1 it must be called after promise is fulfilled/rejected,
@@ -154,12 +147,12 @@ var MutexPromise = (function () {
       return promise2;
     }
   }, {
-    key: "catch",
+    key: 'catch',
     value: function _catch(onRej) {
       return this.then(null, onRej);
     }
   }, {
-    key: "finally",
+    key: 'finally',
     value: function _finally(cb) {
       return this.then(function (value) {
         return MutexPromise.resolve(cb()).then(function () {
@@ -175,7 +168,7 @@ var MutexPromise = (function () {
     // Event methods
 
   }, {
-    key: "emit",
+    key: 'emit',
     value: function emit(eventName, data) {
       var _this = this;
 
@@ -199,7 +192,7 @@ var MutexPromise = (function () {
     //
 
   }, {
-    key: "_thenPending",
+    key: '_thenPending',
     value: function _thenPending(onResolvePromise1, onRejectPromise1) {
       var promise2 = new MutexPromise(function () {});
       // When promise1 is resolved/rejected, its value is passed to
@@ -214,7 +207,7 @@ var MutexPromise = (function () {
     //
 
   }, {
-    key: "_thenImmediate",
+    key: '_thenImmediate',
     value: function _thenImmediate(onResolvePromise1, onRejectPromise1) {
       var promise1 = this;
       var promise2 = new MutexPromise(function () {});
@@ -249,7 +242,7 @@ var MutexPromise = (function () {
     // Notify the .then's (promisees)
 
   }, {
-    key: "_notifyPromisees",
+    key: '_notifyPromisees',
     value: function _notifyPromisees() {
       var _this2 = this;
 
@@ -261,7 +254,7 @@ var MutexPromise = (function () {
     // Catching
 
   }, {
-    key: "_setCaught",
+    key: '_setCaught',
     value: function _setCaught() {
       if (this.state !== PENDING) {
         return;
@@ -276,7 +269,7 @@ var MutexPromise = (function () {
     //
 
   }, {
-    key: "_resolveThenable",
+    key: '_resolveThenable',
     value: function _resolveThenable(thenable, then) {
       var promise1 = this;
       var called = false;
@@ -320,11 +313,11 @@ var MutexPromise = (function () {
     // 2.3 The Promise Resolution Procedure
 
   }, {
-    key: "_resolutionProcedureFn",
+    key: '_resolutionProcedureFn',
     value: function _resolutionProcedureFn(valueOrReasonOrThenable, immediateState) {
       // 1.2 “thenable” is an object or function that defines a then method.
       try {
-        var then = ((typeof valueOrReasonOrThenable === "undefined" ? "undefined" : _typeof(valueOrReasonOrThenable)) === 'object' || typeof valueOrReasonOrThenable === 'function') && valueOrReasonOrThenable !== null && valueOrReasonOrThenable.then;
+        var then = ((typeof valueOrReasonOrThenable === 'undefined' ? 'undefined' : _typeof(valueOrReasonOrThenable)) === 'object' || typeof valueOrReasonOrThenable === 'function') && valueOrReasonOrThenable !== null && valueOrReasonOrThenable.then;
       } catch (e) {
         this.resolutionStack = new Error().stack;
         this.state = REJECTED;
@@ -351,7 +344,7 @@ var MutexPromise = (function () {
       }
     }
   }, {
-    key: "_concludeFn",
+    key: '_concludeFn',
     value: function _concludeFn(valueOrReasonOrThenable, immediateState) {
       var _this3 = this;
 
@@ -366,12 +359,12 @@ var MutexPromise = (function () {
       });
     }
   }, {
-    key: "_resolverFn",
+    key: '_resolverFn',
     value: function _resolverFn(valueOrThenable) {
       this._concludeFn(valueOrThenable, RESOLVED);
     }
   }, {
-    key: "_rejectFn",
+    key: '_rejectFn',
     value: function _rejectFn(reasonOrThenable) {
       this._concludeFn(reasonOrThenable, REJECTED);
 
