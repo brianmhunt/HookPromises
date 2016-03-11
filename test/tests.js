@@ -162,17 +162,36 @@ describe("MutexPromise", function () {
       var p0 = new MP(function (res) { res('123') })
       MP.setMutex('b')
 
+      // Triggers twice
+      //  1. during .then
+      //  2. during .resolve
       return p0
-        .then(() => assert.equal(spy.callCount, 1))
+        .then(() => assert.equal(spy.callCount, 2))
     })
 
-    it("triggers 'trespass' on resolutions across mutexes", function () {
+    it("triggers 'trespass' on resolutions across sync mutexes", function () {
       var spy = handlerSpy('trespass')
       return new MP(function (res) {
         MP.setMutex('b')
         res('123')
       })
-        .then(() => assert.equal(spy.callCount, 1))
+        .then(() => assert.equal(spy.callCount, 2))
+    })
+
+    it("triggers 'trespass' on resolutions across async mutexes", function () {
+      var spy = handlerSpy('trespass')
+      return new MP(function (res) {
+        MP.setMutex('b')
+        setTimeout(() => res('123'), 1)
+      })
+        .then(() => assert.equal(spy.callCount, 2))
+    })
+
+    it("triggers 'trespass' for async then's", function () {
+      var spy = handlerSpy('trespass')
+      var p = new MP((res) => res('x'))
+        .then(() => MP.setMutex('b'))
+      return p.then(() => assert.equal(spy.callCount, 1))
     })
   })
 
