@@ -124,7 +124,8 @@ var MutexPromise = (function () {
       if (this.mutexTo !== MutexPromise.mutexId) {
         this.emit("trespass", {
           promiseMutexTo: this.mutexTo,
-          mutexId: MutexPromise.mutexId
+          mutexId: MutexPromise.mutexId,
+          during: "then"
         });
       }
 
@@ -315,6 +316,15 @@ var MutexPromise = (function () {
   }, {
     key: '_resolutionProcedureFn',
     value: function _resolutionProcedureFn(valueOrReasonOrThenable, immediateState) {
+      // Resolution should occur only in the same mutex.
+      if (this.mutexTo !== MutexPromise.mutexId) {
+        this.emit("trespass", {
+          promiseMutexTo: this.mutexTo,
+          mutexId: MutexPromise.mutexId,
+          during: "Resolution"
+        });
+      }
+
       // 1.2 “thenable” is an object or function that defines a then method.
       try {
         var then = ((typeof valueOrReasonOrThenable === 'undefined' ? 'undefined' : _typeof(valueOrReasonOrThenable)) === 'object' || typeof valueOrReasonOrThenable === 'function') && valueOrReasonOrThenable !== null && valueOrReasonOrThenable.then;
