@@ -162,11 +162,11 @@ var MutexPromise = (function () {
     key: "finally",
     value: function _finally(cb) {
       return this.then(function (value) {
-        return Promise.resolve(cb()).then(function () {
+        return MutexPromise.resolve(cb()).then(function () {
           return value;
         });
       }, function (reason) {
-        return Promise.resolve(cb()).then(function () {
+        return MutexPromise.resolve(cb()).then(function () {
           throw reason;
         });
       });
@@ -392,7 +392,7 @@ var MutexPromise = (function () {
 //
 
 MutexPromise.race = function race(iter) {
-  return new Promise(function (res, rej) {
+  return new MutexPromise(function (res, rej) {
     var weCatchFor = this.weCatchFor;
     iter.forEach(function (p) {
       p.then(res, rej);
@@ -405,30 +405,43 @@ MutexPromise.race = function race(iter) {
 //
 MutexPromise.all = function all(iter) {
   var arr = [];
+  var promises = [];
   var seen = 0;
 
-  return new Promise(function (res, rej) {
-    var weCatchFor = this.weCatchFor;
-    iter.forEach(function (p) {
+  var all = new MutexPromise(function (res, rej) {
+    iter.forEach(function (valueOrPromise) {
+      var p = MutexPromise.resolve(valueOrPromise);
       var idx = arr.length;
       arr.push(undefined);
-      p.then(function (value) {
+      if (valueOrPromise instanceof MutexPromise) {
+        promises.push(p);
+      }
+      MutexPromise.resolve(p).then(function (value) {
         arr[idx] = value;
-        if (seen++ === arr.length) {
+        if (++seen === arr.length) {
           res(arr);
         }
-      });
-      p.catch(rej);
-      weCatchFor.push(p);
+      }, rej);
     });
   });
+
+  promises.forEach(function (p) {
+    all.weCatchFor.push(p);
+  });
+
+  return all;
 };
 
-MutexPromise.resolve = function (value) {
-  return new MutexPromise(function (res) {
-    return res(value);
+MutexPromise.resolve = function (valueOrThenableOrPromise) {
+  var rp = new MutexPromise(function (res) {
+    return res(valueOrThenableOrPromise);
   });
+  if (valueOrThenableOrPromise instanceof MutexPromise) {
+    rp.weCatchFor.push(valueOrThenableOrPromise);
+  }
+  return rp;
 };
+
 MutexPromise.reject = function (reason) {
   return new MutexPromise(function (_, rej) {
     return rej(reason);
