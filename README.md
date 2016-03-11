@@ -1,6 +1,18 @@
 
+<div style='float: right'>
+  <a href='https://travis-ci.org/brianmhunt/MutexPromise.svg?branch=master'>
+    <img src='https://travis-ci.org/brianmhunt/MutexPromise.svg?branch=master' alt='Travis Status' title='Travis Status' align="right">
+  </a>
+
+  <a href="https://promisesaplus.com/">
+      <img src="https://promisesaplus.com/assets/logo-small.png" alt="Promises/A+ logo"
+           title="Promises/A+ 1.0 compliant" align="right" />
+  </a>
+</div>
+
 Mutex Promise
 =============
+
 
 A+ Compliant (and mostly follows ECMA-262) ES6 Promises with a few extra
 features that can help with debugging :

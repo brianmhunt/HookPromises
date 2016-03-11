@@ -27,7 +27,7 @@
     "url": "git+https://github.com/brianmhunt/MutexPromise.git"
   },
   "keywords": [
-    "Promises"
+    "promises-aplus"
   ],
   "author": "Brian M Hunt",
   "license": "MIT",
