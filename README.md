@@ -2,16 +2,27 @@
 Mutex Promise
 =============
 
-A+ Compliant ES6 Promises with a few extra features:
+A+ Compliant (and mostly follows ECMA-262) ES6 Promises with a few extra
+features that can help with debugging :
 
 - events
 - temporal mutual exclusion
 - uncaught checking
 - creation and chaining call stack
 
-These are primarily designed for testing.
+This implementation is primarily designed for testing, and a reasonably
+readable spec-compliant implementation.  Its main intended purpose is as a
+drop-in replacement for the built-in ES6 implementation when one is developing
+and debugging
 
-This implementation is not intended to be used in production.
+This implementation is not intended to be used in production.  As it is itself
+written in ES6 Javascript meaning,
+
+-  there's already a native `Promise` class;
+-  this would need to be transpiled for backwards compatibility; and, in any case
+-  this implementation is not fast compared to others.
+
+There are many other promise implementations better suited for production.
 
 
 ## Events
@@ -50,7 +61,8 @@ p = new Promise(function () {}).then(function () {})
 Promise.setMutex("def")
 p.then(function () {})
 
-// This will emit `trespass` twice.
+// This will emit `trespass` twice - once for both `then`'s because they
+// are both asynchronously resolved.
 ```
 
 The trespass event receives a `data` argument with two events, like this:
@@ -84,7 +96,17 @@ Promise.on('trespass', function (data) {
 
 ## Uncaught Checking
 
-This follows roughly the logic of [Promises Spec #167](https://github.com/promises-aplus/promises-spec/issues/167).
+An `uncaught` event is raised, following roughly the logic of:
+
+- A rejection is raised;
+- After a short period of time, no rejection handler has been added (via `.then`, `race` or `all`) that would catch it
+
+
+Note:
+
+- [The TC39 Spec on Promises](https://tc39.github.io/ecma262/#sec-promise-executor)
+- [promises-aplus issue #167](https://github.com/promises-aplus/promises-spec/issues/167).
+- [ECMA262 issue #76][https://github.com/tc39/ecma262/pull/76]
 
 
 # Creation and Chaining Call Stack
@@ -93,6 +115,8 @@ Each promise instance has a `creationStack`, and once resolved or rejected
 a `resolutionStack`.
 
 
-## License
+## License & Thanks
 
 © 2016 Brian M Hunt (MIT License)
+
+Thanks to [NetPleadings/Conductor](https://conductor.law) for time to work on this!

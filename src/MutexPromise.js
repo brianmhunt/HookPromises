@@ -106,6 +106,15 @@ class MutexPromise {
     // 2.2.2.1/.3.1 it must be called after promise is fulfilled/rejected,
     // with promise’s value/reason as its first argument
 
+    // We should not create a `.then` "promise2" for an existing "promise1"
+    // if the mutex has changed.
+    if (this.mutexTo !== MutexPromise.mutexId) {
+      this.emit("trespass", {
+        promiseMutexTo: this.mutexTo,
+        mutexId: MutexPromise.mutexId
+      })
+    }
+
     if (this.state === PENDING) {
       promise2 = this._thenPending(onFul, onRej)
     } else {
@@ -113,11 +122,11 @@ class MutexPromise {
     }
 
     // Note who we'd catch for (i.e. "parents")
-    promise2.weCatchFor(this)
+    promise2.weCatchFor.push(this)
 
     // We're catching, meaning we catch anything above us.
     if (typeof onRej === 'function') {
-      this._setCaught()
+      promise2._setCaught()
     }
 
     // 2.2.7 then must return a promise
@@ -136,8 +145,9 @@ class MutexPromise {
 
   // Event methods
   emit(eventName, data) {
-    (MutexPromise.eventHandlers[eventName] || [])
-      .forEach((fn) => fn.call(this, data))
+    var handlers = (MutexPromise.eventHandlers[eventName] || [])
+    // FIXME: `tick` each function call
+    handlers.forEach((fn) => fn.call(this, data))
   }
 
   // The "private" methods are below.
@@ -189,6 +199,8 @@ class MutexPromise {
         promise2.state = promise1.state
         promise2.resolution = promise1.resolution
         promise2._notifyPromisees()
+        this.emit(promise1.state === RESOLVED ? 'resolve' : 'reject',
+                  promise1.resolution)
       }
     }
 
@@ -287,12 +299,6 @@ class MutexPromise {
   }
 
   _concludeFn(valueOrReasonOrThenable, immediateState) {
-    if (this.mutexTo !== MutexPromise.mutexId) {
-      this.emit("trespass", {
-        promiseMutexTo: this.mutexTo,
-        mutexId: MutexPromise.mutexId
-      })
-    }
     if (this.state !== PENDING) { return }
     if (valueOrReasonOrThenable === this) {
       throw new TypeError("Cannot resolve promise with itself.")
@@ -323,7 +329,11 @@ class MutexPromise {
 //
 MutexPromise.race = function race(iter) {
   return new Promise(function (res, rej) {
-    iter.forEach((p) => p.then(res, rej))
+    var weCatchFor = this.weCatchFor
+    iter.forEach(function (p) {
+      p.then(res, rej)
+      weCatchFor.push(p)
+    })
   })
 }
 
@@ -334,6 +344,7 @@ MutexPromise.all = function all(iter) {
   var seen = 0
 
   return new Promise(function (res, rej) {
+    var weCatchFor = this.weCatchFor
     iter.forEach(function (p) {
       var idx = arr.length
       arr.push(undefined)
@@ -342,6 +353,7 @@ MutexPromise.all = function all(iter) {
         if (seen++ === arr.length) { res(arr) }
       })
       p.catch(rej)
+      weCatchFor.push(p)
     })
   })
 }

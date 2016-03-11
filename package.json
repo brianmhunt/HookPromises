@@ -12,7 +12,8 @@
     "chai": "^3.5.0",
     "eslint": "^2.3.0",
     "mocha": "^2.4.5",
-    "promises-aplus-tests": "^2.1.1"
+    "promises-aplus-tests": "^2.1.1",
+    "sinon": "^1.17.3"
   },
   "scripts": {
     "test": "./node_modules/mocha/bin/mocha -u bdd",

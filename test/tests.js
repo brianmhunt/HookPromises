@@ -1,12 +1,11 @@
 //
 // Test the MutexPromise implementation.
 //
-const MP = require('../src/MutexPromise')
+/*  eslint no-console: 0 */
+const sinon = require('sinon')
 const assert = require('chai').assert
 
-
-function noop() {}
-
+const MP = require('../src/MutexPromise')
 
 const APLUS_ADAPTER = {
   deferred: function deferred() {
@@ -20,11 +19,25 @@ const APLUS_ADAPTER = {
   }
 }
 
+function noop() { return arguments[0] }
+
+
+function handlerSpy(eventName) {
+  var spy = sinon.spy()
+  MP.on(eventName, spy)
+  after(() => MP.off(eventName, spy))
+  return spy
+}
+
+
+describe("Promises A+", function () {
+  require('promises-aplus-tests').mocha(APLUS_ADAPTER)
+})
 
 describe("MutexPromise", function () {
-  describe("Promises A+", function () {
-    require('promises-aplus-tests').mocha(APLUS_ADAPTER)
-  })
+  beforeEach(function () { MP.setMutex(this.currentTest.title) })
+  afterEach(() => MP.eventHandlers = {})
+
 
   it("can be constructed as an instance of the class", function () {
     var mp = new MP(function () {})
@@ -53,117 +66,128 @@ describe("MutexPromise", function () {
       .then(function () { throw Error("Do not call") }, () => assert.ok(called))
   })
 
-  function handlerSpy(eventName) {
-    var spy = sinon.spy()
-    Promise.on(eventName, spy)
-    after(() => Promise.off(eventName, spy))
-    return spy
-  }
-
   it("throws if no function is given", function() {
-    assert.throws(() => new Promise(), /requires a function/)
+    assert.throws(() => new MP(), /is not a function/)
   })
 
-  it("triggers 'new'", function() {
-    var spy = handlerSpy('new')
-    assert.equal(spy.callCount, 0)
-    var p = new Promise(function () {})
-    assert.equal(spy.callCount, 1)
-    assert.strictEqual(spy.thisValues[0], p)
-  })
-
-  it("triggers 'resolve'", function () {
-    var spy = handlerSpy('resolve')
-    assert.equal(spy.callCount, 0)
-    return new Promise(function (res) { res('rqs') })
-      .then(function (r) {
-        assert.equal(spy.callCount, 1)
-        assert.equal(r, 'rqs')
-      })
-  })
-
-  it("triggers 'reject'", function () {
-    var spy = handlerSpy('reject')
-    assert.equal(spy.callCount, 0, 'sc0')
-    return new Promise(function (res,rej) { rej(new Error('rqt')) })
-      .catch(function (reason) {
-        assert.equal(spy.callCount, 1, 'sc1')
-        assert.equal(reason.message, 'rqt')
-      })
-  })
-
-  it("triggers 'uncaught'", function (done) {
-    // The original throws an error on an uncaught promise.
-    var original = Promise.eventHandlers.uncaught.slice(0)
-    Promise.eventHandlers.uncaught.length = 0
-    after(() => Promise.eventHandlers.uncaught = original)
-
-    var spy = handlerSpy('uncaught')
-    assert.equal(spy.callCount, 0)
-    var p0 = new Promise(function (res,rej) { rej(new Error('rqu')) })
-
-    setTimeout(function () {
+  describe('events', function () {
+    it("triggers 'new'", function() {
+      var spy = handlerSpy('new')
+      assert.equal(spy.callCount, 0)
+      var p = new MP(function () {})
       assert.equal(spy.callCount, 1)
-      done()
-    }, 150)
-  })
+      assert.strictEqual(spy.thisValues[0], p)
+    })
 
-  it("does not trigger 'uncaught' on rejected return", function () {
-    return new Promise(function (res, rej) { res('123') })
-      .then(() => Promise.reject("-- inside --!"))
-      .catch(function () { })
-  })
+    it("triggers 'resolve'", function () {
+      var spy = handlerSpy('resolve')
+      assert.equal(spy.callCount, 0)
+      return new MP(function (res) { res('rqs') })
+        .then(noop) // events are called after `then` resolutions
+        .then(function (r) {
+          assert.equal(spy.callCount, 1)
+          assert.equal(r, 'rqs')
+        })
+    })
 
-  it("does not trigger 'uncaught' on Promise.all", function () {
-    return Promise.all([
-      Promise.reject('x'),
-      Promise.resolve('y'),
-    ]).catch(() => 123)
+    it("triggers 'reject'", function () {
+      var spy = handlerSpy('reject')
+      assert.equal(spy.callCount, 0, 'sc0')
+      return new MP(function (res,rej) { rej(new Error('rqt')) })
+        .catch(noop)
+        .then(function (reason) {
+          assert.equal(spy.callCount, 1, 'sc1')
+          assert.equal(reason.message, 'rqt')
+        })
+    })
+
+    it("triggers 'uncaught'", function (done) {
+      var spy = handlerSpy('uncaught')
+
+      assert.equal(spy.callCount, 0)
+      new MP(function (res,rej) { rej('rqu') })
+      setTimeout(function () {
+        assert.equal(spy.callCount, 1)
+        done()
+      }, 150)
+    })
+
+    it("does not trigger 'uncaught' on rejected return", function () {
+      return new MP(function (res) { res('123') })
+        .then(() => MP.reject("-- inside --!"))
+        .catch(function () { })
+    })
+
+    it("does not trigger 'uncaught' on Promise.all", function () {
+      return MP.all([
+        MP.reject('x'),
+        MP.resolve('y')
+      ]).catch(() => 123)
+    })
+
+    it("triggers 'trespass' on chained 'then's across mutexes", function () {
+      var spy = handlerSpy('trespass')
+      var p0 = new MP(function (res) { res('123') })
+      MP.setMutex('b')
+
+      return p0
+        .then(() => assert.equal(spy.callCount, 1))
+    })
+
+    it("triggers 'trespass' on resolutions across mutexes", function () {
+      var spy = handlerSpy('trespass')
+      return new MP(function (res) {
+        MP.setMutex('b')
+        res('123')
+      })
+        .then(() => assert.equal(spy.callCount, 1))
+    })
   })
 
   it("marks promises as caught", function () {
-    var p = Promise.resolve()
-    assert.notOk(p.isCaught)
+    var p = MP.resolve()
+    assert.notOk(p._isCaught)
 
     p.catch(noop)
-    assert.ok(p.isCaught)
+    assert.ok(p._isCaught)
   })
 
   it("marks nested promises as caught", function () {
-    var p0 = Promise.resolve("p0")
+    var p0 = MP.resolve("p0")
     var p1 = p0.then(function p1f(){})
-    assert.notOk(p0.isCaught, 'p0')
-    assert.notOk(p1.isCaught, 'p1')
+    assert.notOk(p0._isCaught, 'p0')
+    assert.notOk(p1._isCaught, 'p1')
 
     var p0c = p0.catch(function p0cf(){})
     var p1c = p1.catch(function p1cf(){})
 
-    assert.ok(p0.isCaught, 'p0+')
-    assert.ok(p1.isCaught, 'p1+')
-    assert.ok(p0c.isCaught, 'p0c')
-    assert.ok(p1c.isCaught, 'p1c')
+    assert.ok(p0._isCaught, 'p0+')
+    assert.ok(p1._isCaught, 'p1+')
+    assert.ok(p0c._isCaught, 'p0c')
+    assert.ok(p1c._isCaught, 'p1c')
   })
 
   it("marks then-promises as caught", function () {
     var p1
-    var p0 = Promise.resolve()
-      .then(() => p1 = Promise.resolve())
+    var p0 = MP.resolve()
+      .then(() => p1 = MP.resolve())
       .then(function () {
-        assert.notOk(p1.isCaught, 'p1x')
+        assert.notOk(p1._isCaught, 'p1x')
         p0.catch(noop)
-        assert.ok(p1.isCaught, 'p1o')
+        assert.ok(p1._isCaught, 'p1o')
       })
   })
 
   it("does not mark outer promises as caught", function () {
     var p1
-    var p0 = Promise.resolve()
-      .then(() => p1 = Promise.resolve())
+    var p0 = MP.resolve()
+      .then(() => p1 = MP.resolve())
       .then(function () {
         p1.catch(noop)
-        assert.ok(p1.isCaught, 'p1o')
-        assert.notOk(p0.isCaught, 'p0x')
+        assert.ok(p1._isCaught, 'p1o')
+        assert.notOk(p0._isCaught, 'p0x')
       })
+      // Prevent 'uncaught' event bleed
+      .catch(noop)
   })
-
 })
