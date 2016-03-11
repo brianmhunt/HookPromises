@@ -5,6 +5,10 @@
 const sinon = require('sinon')
 const assert = require('chai').assert
 
+
+// We do not ever want to refer to the global promise.
+global.Promise = null
+
 const MP = require('../src/MutexPromise')
 
 const APLUS_ADAPTER = {
@@ -30,10 +34,13 @@ function handlerSpy(eventName) {
 }
 
 
+// Run the Promises A+ suite
 describe("Promises A+", function () {
   require('promises-aplus-tests').mocha(APLUS_ADAPTER)
 })
 
+
+// Out MutexPromise-specific tests
 describe("MutexPromise", function () {
   beforeEach(function () { MP.setMutex(this.currentTest.title) })
   afterEach(() => MP.eventHandlers = {})
@@ -59,15 +66,40 @@ describe("MutexPromise", function () {
   })
 
   it("instances have .finally", function () {
-    var val = {x: '123'}
-    var called = false
-    return MP.reject(val)
-      .finally(() => called = true)
-      .then(function () { throw Error("Do not call") }, () => assert.ok(called))
   })
 
-  it("throws if no function is given", function() {
+  it("throws if no function is given to constructor", function() {
     assert.throws(() => new MP(), /is not a function/)
+  })
+
+  describe(".finally", function () {
+    it("taps resolutions", function () {
+      var val = { x: '123' }
+      var called = false
+      return MP.resolve(val)
+        .finally(() => called = true)
+        .then(
+          function (reason) {
+            assert.ok(called)
+            assert.strictEqual(reason, val)
+          },
+          function () { throw Error("Do not call") }
+        )
+    })
+
+    it("taps rejections", function () {
+      var val = { x: '123' }
+      var called = false
+      return MP.reject(val)
+        .finally(() => called = true)
+        .then(
+          function () { throw Error("Do not call") },
+          function (reason) {
+            assert.ok(called)
+            assert.strictEqual(reason, val)
+          }
+        )
+    })
   })
 
   describe('events', function () {
@@ -190,4 +222,32 @@ describe("MutexPromise", function () {
       // Prevent 'uncaught' event bleed
       .catch(noop)
   })
+
+  describe("Promise.all", function () {
+    it("Returns the result of all promises", function () {
+      return MP.all([
+        MP.resolve('ab'),
+        MP.resolve('a').then(() => 'b'),
+        'step',
+        null
+      ]).then(function (results) {
+        assert.equal(results[0], 'ab')
+        assert.equal(results[1], 'b')
+        assert.equal(results[2], 'step')
+        assert.equal(results[3], null)
+      })
+    })
+
+    it.skip("Marks its argument-promises as caught", function () {
+      var p0 = MP.resolve('ab')
+      return MP.all([p0])
+        .then(() => assert.notOk(p0.isCaught))
+        .catch(noop) // this occurs before weCatchFor.push; FIXME
+        .then(() => assert.ok(p0.isCaught))
+    })
+  })
+
+  // describe("Promise.race", function () {
+  //
+  // })
 })

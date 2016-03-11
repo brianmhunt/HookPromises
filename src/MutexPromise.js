@@ -138,8 +138,8 @@ class MutexPromise {
 
   finally(cb) {
     return this.then(
-      (value) => Promise.resolve(cb()).then(() => value),
-      (reason) => Promise.resolve(cb()).then(function () { throw reason })
+      (value) => MutexPromise.resolve(cb()).then(() => value),
+      (reason) => MutexPromise.resolve(cb()).then(function () { throw reason })
     )
   }
 
@@ -328,7 +328,7 @@ class MutexPromise {
 // Global methods on MutexPromise
 //
 MutexPromise.race = function race(iter) {
-  return new Promise(function (res, rej) {
+  return new MutexPromise(function (res, rej) {
     var weCatchFor = this.weCatchFor
     iter.forEach(function (p) {
       p.then(res, rej)
@@ -341,24 +341,40 @@ MutexPromise.race = function race(iter) {
 //
 MutexPromise.all = function all(iter) {
   var arr = []
+  var promises = []
   var seen = 0
 
-  return new Promise(function (res, rej) {
-    var weCatchFor = this.weCatchFor
-    iter.forEach(function (p) {
+  var all = new MutexPromise(function (res, rej) {
+    iter.forEach(function (valueOrPromise) {
+      var p = MutexPromise.resolve(valueOrPromise)
       var idx = arr.length
       arr.push(undefined)
-      p.then(function (value) {
-        arr[idx] = value
-        if (seen++ === arr.length) { res(arr) }
-      })
-      p.catch(rej)
-      weCatchFor.push(p)
+      if (valueOrPromise instanceof MutexPromise) {
+        promises.push(p)
+      }
+      MutexPromise.resolve(p)
+        .then(function (value) {
+          arr[idx] = value
+          if (++seen === arr.length) { res(arr) }
+        }, rej)
     })
   })
+
+  promises.forEach(function (p) {
+    all.weCatchFor.push(p)
+  })
+
+  return all
 }
 
-MutexPromise.resolve = (value) => new MutexPromise((res) => res(value))
+MutexPromise.resolve = function (valueOrThenableOrPromise) {
+  var rp = new MutexPromise((res) => res(valueOrThenableOrPromise))
+  if (valueOrThenableOrPromise instanceof MutexPromise) {
+    rp.weCatchFor.push(valueOrThenableOrPromise)
+  }
+  return rp
+}
+
 MutexPromise.reject = (reason) => new MutexPromise((_, rej) => rej(reason))
 
 
