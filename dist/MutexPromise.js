@@ -120,16 +120,6 @@ var MutexPromise = function () {
       // 2.2.2.1/.3.1 it must be called after promise is fulfilled/rejected,
       // with promise’s value/reason as its first argument
 
-      // We should not create a `.then` "promise2" for an existing "promise1"
-      // if the mutex has changed.
-      if (this.mutexTo !== MutexPromise.mutexId) {
-        this.emit("trespass", {
-          promiseMutexTo: this.mutexTo,
-          mutexId: MutexPromise.mutexId,
-          during: "then"
-        });
-      }
-
       if (this.state === PENDING) {
         promise2 = this._thenPending(onFul, onRej);
       } else {
@@ -138,6 +128,7 @@ var MutexPromise = function () {
 
       // Note who we'd catch for (i.e. "parents")
       promise2.weCatchFor.push(this);
+      promise2.chainsFrom(this);
 
       // We're catching, meaning we catch anything above us.
       if (typeof onRej === 'function') {
@@ -180,6 +171,28 @@ var MutexPromise = function () {
         return fn.call(_this, data);
       });
     }
+  }, {
+    key: 'chainsFrom',
+    value: function chainsFrom(previousPromise) {
+      if (this.mutexTo !== MutexPromise.mutexId) {
+        this.emit("trespass", {
+          promiseMutexStack: this.creationStack,
+          promiseMutexTo: this.mutexTo,
+          mutexId: MutexPromise.mutexId,
+          during: "construction"
+        });
+      } else if (this.mutexTo !== previousPromise.mutexTo) {
+        this.emit("trespass", {
+          promiseMutexStack: previousPromise.creationStack,
+          promiseMutexTo: this.mutexTo,
+          mutexId: previousPromise.mutexTo,
+          during: "chain"
+        });
+        // Assign the previousPromise identifier so we can trace back to the
+        // originating mutex from leafs.
+        this.mutexTo = previousPromise.mutexId;
+      }
+    }
 
     // The "private" methods are below.
     // ---
@@ -215,6 +228,15 @@ var MutexPromise = function () {
       var promise2 = new MutexPromise(function () {});
 
       function setResultForPromise2() {
+        // Re-run our mutex checks in this event loop.
+        if (promise2.mutexTo !== MutexPromise.mutexId) {
+          promise2.emit("trespass", {
+            promiseMutexStack: promise1.creationStack,
+            promiseMutexTo: promise2.mutexTo,
+            mutexId: MutexPromise.mutexId,
+            during: "immediate-resolution"
+          });
+        }
         var thenFn = promise1.state === RESOLVED ? onResolvePromise1 : onRejectPromise1;
 
         if (typeof thenFn === 'function') {
@@ -320,9 +342,10 @@ var MutexPromise = function () {
       // Resolution should occur only in the same mutex.
       if (this.mutexTo !== MutexPromise.mutexId) {
         this.emit("trespass", {
+          promiseMutexStack: this.creationStack,
           promiseMutexTo: this.mutexTo,
           mutexId: MutexPromise.mutexId,
-          during: "Resolution"
+          during: "deferred-resolution"
         });
       }
 
@@ -394,20 +417,23 @@ var MutexPromise = function () {
 //
 // Global methods on MutexPromise
 //
-
-
-MutexPromise.race = function race(iter) {
-  return new MutexPromise(function (res, rej) {
-    var weCatchFor = this.weCatchFor;
-    iter.forEach(function (p) {
-      p.then(res, rej);
-      weCatchFor.push(p);
-    });
-  });
-};
+// MutexPromise.race = function race(iter) {
+// FIXME
+// var rp = new MutexPromise(function (res, rej) {
+//   var weCatchFor = this.weCatchFor
+//   iter.forEach(function (p) {
+//     p.then(res, rej)
+//     weCatchFor.push(p)
+//   })
+// })
+// rp.chainsFrom()
+// return rp
+// }
 
 //
 //
+
+
 MutexPromise.all = function all(iter) {
   var arr = [];
   var promises = [];
@@ -435,6 +461,7 @@ MutexPromise.all = function all(iter) {
 
   promises.forEach(function (p) {
     all.weCatchFor.push(p);
+    all.chainsFrom(p);
   });
 
   return all;
@@ -446,6 +473,7 @@ MutexPromise.resolve = function (valueOrThenableOrPromise) {
   });
   if (valueOrThenableOrPromise instanceof MutexPromise) {
     rp.weCatchFor.push(valueOrThenableOrPromise);
+    rp.chainsFrom(valueOrThenableOrPromise);
   }
   return rp;
 };

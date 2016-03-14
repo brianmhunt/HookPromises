@@ -138,12 +138,14 @@ class MutexPromise {
   chainsFrom(previousPromise) {
     if (this.mutexTo !== MutexPromise.mutexId) {
       this.emit("trespass", {
+        promiseMutexStack: this.creationStack,
         promiseMutexTo: this.mutexTo,
         mutexId: MutexPromise.mutexId,
         during: "construction"
       })
     } else if (this.mutexTo !== previousPromise.mutexTo) {
       this.emit("trespass", {
+        promiseMutexStack: previousPromise.creationStack,
         promiseMutexTo: this.mutexTo,
         mutexId: previousPromise.mutexTo,
         during: "chain"
@@ -186,6 +188,7 @@ class MutexPromise {
       // Re-run our mutex checks in this event loop.
       if (promise2.mutexTo !== MutexPromise.mutexId) {
         promise2.emit("trespass", {
+          promiseMutexStack: promise1.creationStack,
           promiseMutexTo: promise2.mutexTo,
           mutexId: MutexPromise.mutexId,
           during: "immediate-resolution"
@@ -280,6 +283,7 @@ class MutexPromise {
     // Resolution should occur only in the same mutex.
     if (this.mutexTo !== MutexPromise.mutexId) {
       this.emit("trespass", {
+        promiseMutexStack: this.creationStack,
         promiseMutexTo: this.mutexTo,
         mutexId: MutexPromise.mutexId,
         during: "deferred-resolution"
