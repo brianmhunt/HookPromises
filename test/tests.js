@@ -41,7 +41,7 @@ describe("Promises A+", function () {
 
 
 // Out MutexPromise-specific tests
-describe("MutexPromise", function () {
+describe.only("MutexPromise", function () {
   beforeEach(function () { MP.setMutex(this.currentTest.title) })
   afterEach(() => MP.eventHandlers = {})
 
@@ -162,11 +162,12 @@ describe("MutexPromise", function () {
       var p0 = new MP(function (res) { res('123') })
       MP.setMutex('b')
 
-      // Triggers twice
-      //  1. during .then
-      //  2. during .resolve
+      // Three 'tresspass' events:
+      //    1. p0 resolves;
+      //    2. p0 chains to .then;
+      //    3. .then promise resolves.
       return p0
-        .then(() => assert.equal(spy.callCount, 2))
+        .then(() => assert.equal(spy.callCount, 3))
     })
 
     it("triggers 'trespass' on resolutions across sync mutexes", function () {
@@ -175,7 +176,7 @@ describe("MutexPromise", function () {
         MP.setMutex('b')
         res('123')
       })
-        .then(() => assert.equal(spy.callCount, 2))
+        .then(() => assert.equal(spy.callCount, 3))
     })
 
     it("triggers 'trespass' on resolutions across async mutexes", function () {
@@ -184,7 +185,7 @@ describe("MutexPromise", function () {
         MP.setMutex('b')
         setTimeout(() => res('123'), 1)
       })
-        .then(() => assert.equal(spy.callCount, 2))
+        .then(() => assert.equal(spy.callCount, 3))
     })
 
     it("triggers 'trespass' for async then's", function () {
@@ -192,6 +193,24 @@ describe("MutexPromise", function () {
       var p = new MP((res) => res('x'))
         .then(() => MP.setMutex('b'))
       return p.then(() => assert.equal(spy.callCount, 1))
+    })
+
+    it("triggers trespass via .all", function () {
+      var spy = handlerSpy('trespass')
+      // MP.on('trespass', function (data) {
+      //   console.log(" ⚡️   ", data)
+      //   console.trace()
+      // })
+      var p0 = new MP(function (res) {
+        setTimeout(function () {
+          res()
+          MP.setMutex('rx')
+        }, 1)
+      })
+
+      // FIXME This is higher than it should be.
+      return MP.all([0, p0, 1, 2])
+        .then(() => assert.equal(spy.callCount, 6))
     })
   })
 
