@@ -287,6 +287,15 @@ describe.only("MutexPromise", function () {
         .catch(noop) // this occurs before weCatchFor.push; FIXME
         .then(() => assert.ok(p0.isCaught))
     })
+
+    it("iterates over generator functions", function () {
+      function* gen() {
+        yield 1
+        yield 2
+      }
+      return MP.all(gen())
+        .then((v) => assert.deepEqual(v, [1, 2]))
+    })
   })
 
   // describe("Promise.race", function () {

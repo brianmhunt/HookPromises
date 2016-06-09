@@ -440,7 +440,7 @@ MutexPromise.all = function all(iter) {
   var seen = 0;
 
   var all = new MutexPromise(function (res, rej) {
-    iter.forEach(function (valueOrPromise) {
+    Array.from(iter).forEach(function (valueOrPromise) {
       var p = MutexPromise.resolve(valueOrPromise);
       var idx = arr.length;
       arr.push(undefined);

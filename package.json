@@ -1,6 +1,6 @@
 {
   "name": "brianmhunt-mutex-promise",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Promises with uncaught handling and events",
   "main": "index.js",
   "directories": {
