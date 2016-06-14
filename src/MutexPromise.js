@@ -154,7 +154,6 @@ class MutexPromise {
       // originating mutex from leafs.
       this.mutexTo = previousPromise.mutexId
     }
-
   }
 
   // The "private" methods are below.
@@ -375,12 +374,15 @@ MutexPromise.all = function all(iter) {
 
   var all = new MutexPromise(function (res, rej) {
     Array.from(iter).forEach(function (valueOrPromise) {
-      var p = MutexPromise.resolve(valueOrPromise)
-      var idx = arr.length
-      arr.push(undefined)
+      var p
       if (valueOrPromise instanceof MutexPromise) {
+        p = valueOrPromise
         promises.push(p)
+      } else {
+        p = MutexPromise.resolve(valueOrPromise)
       }
+      var idx = arr.length
+      arr.push(undefined)  // Placeholder.
       MutexPromise.resolve(p)
         .then(function (value) {
           arr[idx] = value

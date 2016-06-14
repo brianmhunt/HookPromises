@@ -6,6 +6,9 @@ const sinon = require('sinon')
 const assert = require('chai').assert
 
 
+// Enable/Disable the Promise A+ spec.
+const PERFORM_APLUS_TESTS = true
+
 // We do not ever want to refer to the global promise.
 global.Promise = null
 
@@ -36,12 +39,14 @@ function handlerSpy(eventName) {
 
 // Run the Promises A+ suite
 describe("Promises A+", function () {
-  require('promises-aplus-tests').mocha(APLUS_ADAPTER)
+  if (PERFORM_APLUS_TESTS) {
+    require('promises-aplus-tests').mocha(APLUS_ADAPTER)
+  }
 })
 
 
 // Out MutexPromise-specific tests
-describe.only("MutexPromise", function () {
+describe("MutexPromise", function () {
   beforeEach(function () { MP.setMutex(this.currentTest.title) })
   afterEach(() => MP.eventHandlers = {})
 
@@ -208,9 +213,8 @@ describe.only("MutexPromise", function () {
         }, 1)
       })
 
-      // FIXME This is higher than it should be.
       return MP.all([0, p0, 1, 2])
-        .then(() => assert.equal(spy.callCount, 6))
+        .then(() => assert.equal(spy.callCount, 4))
     })
   })
 
@@ -274,6 +278,20 @@ describe.only("MutexPromise", function () {
         assert.equal(results[2], 'step')
         assert.equal(results[3], null)
       })
+    })
+
+    it("trespass raised when mutexes differ", function () {
+      var a, b
+      a = MP.resolve(1)
+      b = MP.resolve(2)
+      a.mutexTo = 'A'
+      b.mutexTo = 'B'
+
+      return new MP((resolve) => {
+        MP.on('trespass', resolve)
+        MP.all([a, b])
+      })
+        .then((tp) => assert.equal(tp.during, 'chain'))
     })
 
     it("finishes when given an empty array", function () {
