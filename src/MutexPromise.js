@@ -214,7 +214,7 @@ class MutexPromise {
         promise2.state = promise1.state
         promise2.resolution = promise1.resolution
         promise2._notifyPromisees()
-        this.emit(promise1.state === RESOLVED ? 'resolve' : 'reject',
+        promise1.emit(promise1.state === RESOLVED ? 'resolve' : 'reject',
                   promise1.resolution)
       }
     }
