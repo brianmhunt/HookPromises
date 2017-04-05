@@ -19,7 +19,7 @@
 // References are to the spec, at https://promisesaplus.com/
 //
 
-/* eslint no-console: 0 */
+/* eslint no-console: 0, semi: 0, wrap-iife: 0, indent: 0, lodash/prefer-noop: 0 */
 
 const PENDING = 0, RESOLVED = 1, REJECTED = -1
 const UNCAUGHT_TIMEOUT = 25
