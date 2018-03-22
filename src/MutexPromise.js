@@ -352,8 +352,12 @@ class MutexPromise {
 //
 // Global methods on MutexPromise
 //
-// MutexPromise.race = function race(iter) {
-  // FIXME
+MutexPromise.race = function race (iter) {
+  return new MutexPromise((resolve, reject) => {
+    for (const i of iter) { MutexPromise.resolve(i).then(resolve, reject) }
+  })
+}
+  // FIXME ^^^ Tracking
   // var rp = new MutexPromise(function (res, rej) {
   //   var weCatchFor = this.weCatchFor
   //   iter.forEach(function (p) {

@@ -77,6 +77,24 @@ describe("MutexPromise", function () {
     assert.throws(() => new MP(), /is not a function/)
   })
 
+  describe('.race', function () {
+    it('resolves the an primitive', async () =>
+      assert.equal(await MP.race([1]), 1)
+    )
+    it('resolves a promise', async () =>
+      assert.equal(await MP.race([MP.resolve(1)]), 1)
+    )
+    it('resolves the first promise', async () =>
+      assert.equal(await MP.race([MP.resolve(1), 2]), 2)
+    )
+    it('rejects the first rejection', async () => {
+      let x = 0
+      await MP.race([MP.reject(1), MP.resolve(2)]).catch(v => (x = v))
+      assert.equal(x, 1)
+    })
+  })
+
+
   describe(".finally", function () {
     it("taps resolutions", function () {
       var val = { x: '123' }
